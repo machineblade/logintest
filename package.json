@@ -1,11 +1,8 @@
 {
-  "name": "test",
+  "name": "vercel-auth",
   "version": "1.0.0",
-  "scripts": {
-    "dev": "vercel dev"
-  },
   "dependencies": {
-    "bcryptjs": "^2.4.3",
-    "serverless-mysql": "^1.5.4"
+    "mysql2": "^3.6.0",
+    "bcryptjs": "^2.4.3"
   }
 }

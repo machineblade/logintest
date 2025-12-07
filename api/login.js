@@ -1,37 +1,21 @@
 const bcrypt = require('bcryptjs');
-const db = require('../lib/db');
+const pool = require('../lib/db.js');
 
 module.exports = async (req, res) => {
-  if (req.method !== 'POST') return res.status(405).end();
-
-  let body = '';
-  await new Promise(resolve => {
-    req.on('data', chunk => (body += chunk.toString()));
-    req.on('end', resolve);
-  });
-
-  const data = JSON.parse(body || '{}');
-  const { email, password } = data;
-
-  if (!email || !password) {
-    return res.status(400).json({ error: 'Invalid input' });
-  }
-
+  if (req.method !== 'POST') return res.status(405).json({error: 'Method not allowed'});
+  
+  const { email, password } = req.body;
+  
   try {
-    const users = await db.query('SELECT * FROM users WHERE email = ?', [email]);
-    if (users.length === 0) {
-      return res.status(400).json({ error: 'Invalid email or password' });
+    const [rows] = await pool.execute('SELECT * FROM users WHERE email = ?', [email]);
+    const user = rows[0];
+    
+    if (user && await bcrypt.compare(password, user.password)) {
+      res.json({ success: true, user: { id: user.id, email } });
+    } else {
+      res.status(401).json({ error: 'Invalid credentials' });
     }
-
-    const user = users[0];
-    const match = await bcrypt.compare(password, user.password_hash);
-    if (!match) {
-      return res.status(400).json({ error: 'Invalid email or password' });
-    }
-
-    // For now, just return success; you can add JWT later
-    return res.status(200).json({ userId: user.id });
-  } catch {
-    return res.status(500).json({ error: 'Server error' });
+  } catch (e) {
+    res.status(500).json({ error: 'Server error' });
   }
 };
